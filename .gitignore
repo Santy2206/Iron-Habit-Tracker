@@ -219,3 +219,7 @@ __marimo__/
 credentials.json
 token.json
 data/
+
+# Windows shell artifact (e.g. `... 2>nul` resolved as a real file under Git Bash)
+nul
+NUL
