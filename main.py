@@ -1,3 +1,5 @@
-from features.physical import weight_tracker
+import sys
 
-weight_tracker.main()
+from features import shell
+
+shell.run(weekly_check="--weekly-check" in sys.argv)
