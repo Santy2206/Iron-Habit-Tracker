@@ -27,20 +27,35 @@ def log(message):
 
 
 def get_credentials_noninteractive():
-    import os
+    """Same token path as the GUI app, but never opens a browser.
 
+    If the token is corrupt or the refresh is rejected, delete it and bail —
+    the next interactive app launch will re-auth automatically.
+    """
     from google.oauth2.credentials import Credentials
 
-    if not os.path.exists("./token.json"):
+    token_path = weight_tracker.TOKEN_PATH
+    if not token_path.exists():
         return None
-    creds = Credentials.from_authorized_user_file("./token.json", weight_tracker.SCOPES)
+
+    try:
+        creds = Credentials.from_authorized_user_file(
+            str(token_path), weight_tracker.SCOPES
+        )
+    except Exception as e:
+        log(f"token.json unreadable ({e}); removed so the app can re-auth.")
+        weight_tracker._delete_token()
+        return None
+
     if creds and not creds.valid and creds.expired and creds.refresh_token:
         try:
             creds.refresh(Request())
-        except Exception:
+        except Exception as e:
+            log(f"Token refresh failed ({e}); removed so the app can re-auth.")
+            weight_tracker._delete_token()
             return None
-        with open("token.json", "w") as token:
-            token.write(creds.to_json())
+        weight_tracker._save_token(creds)
+
     if not creds or not creds.valid:
         return None
     return creds

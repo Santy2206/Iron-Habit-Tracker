@@ -66,13 +66,16 @@ def _darken(hex_color, factor):
 
 def sync_with_google_fit():
     """Fetches recent readings from Google Fit, merges them into local storage,
-    and fills in any missing weekly averages. Falls back to local data on failure."""
+    and fills in any missing weekly averages. Falls back to local data on failure.
+
+    Auth is handled by weight_tracker.get_credentials(): a bad/revoked token is
+    deleted and the browser OAuth flow opens automatically for a fresh one.
+    If the API still rejects the access token mid-call, we clear the token once
+    and retry the whole auth+fetch cycle before giving up.
+    """
     data = storage.load()
     try:
-        creds = weight_tracker.get_credentials()
-        fitness_service = build("fitness", "v1", credentials=creds)
-        time_range = weight_tracker.get_time_range_for_weeks(LOOKBACK_WEEKS)
-        fetched = weight_tracker.get_weight_history(fitness_service, time_range)
+        fetched = _fetch_google_fit_weights(retry_auth=True)
         storage.upsert_daily_weights(fetched, data)
     except Exception as e:
         print(f"Could not sync with Google Fit, showing local data instead: {e}")
@@ -83,6 +86,35 @@ def sync_with_google_fit():
     data["weekly_averages"] = updated_averages
     storage.save(data)
     return data
+
+
+def _fetch_google_fit_weights(retry_auth=True):
+    """Auth + Fit fetch. On 401/invalid_grant-style failures, wipe the token and
+    re-auth once so a silently-dead access token still recovers automatically."""
+    creds = weight_tracker.get_credentials()
+    fitness_service = build("fitness", "v1", credentials=creds)
+    time_range = weight_tracker.get_time_range_for_weeks(LOOKBACK_WEEKS)
+    try:
+        return weight_tracker.get_weight_history(fitness_service, time_range)
+    except Exception as e:
+        msg = str(e).lower()
+        auth_related = any(
+            s in msg
+            for s in (
+                "invalid_grant",
+                "invalid_client",
+                "unauthorized",
+                "401",
+                "token has been expired",
+                "token has been revoked",
+                "access_denied",
+            )
+        )
+        if retry_auth and auth_related:
+            print(f"Google Fit rejected credentials ({e}); re-authenticating…")
+            weight_tracker._delete_token()
+            return _fetch_google_fit_weights(retry_auth=False)
+        raise
 
 
 class DietPage(ctk.CTkFrame):
@@ -120,16 +152,19 @@ class DietPage(ctk.CTkFrame):
         nav_buttons.pack(side="left")
         self.prev_button = ctk.CTkButton(
             nav_buttons, text="◀", width=36, command=self.go_previous,
-            fg_color=self.accent_color, hover_color=self.accent_hover,
+            fg_color="white", hover_color="#e5e7eb",
+            text_color="#1a1d23",
         )
         self.prev_button.pack(side="left", padx=(0, 6))
         ctk.CTkButton(
             nav_buttons, text="Today", width=70, command=self.go_today,
-            fg_color=self.accent_color, hover_color=self.accent_hover,
+            fg_color="white", hover_color="#e5e7eb",
+            text_color="#1a1d23",
         ).pack(side="left", padx=6)
         self.next_button = ctk.CTkButton(
             nav_buttons, text="▶", width=36, command=self.go_next,
-            fg_color=self.accent_color, hover_color=self.accent_hover,
+            fg_color="white", hover_color="#e5e7eb",
+            text_color="#1a1d23",
         )
         self.next_button.pack(side="left", padx=(6, 0))
 
@@ -603,7 +638,8 @@ class DietPage(ctk.CTkFrame):
         fields_row = ctk.CTkFrame(self.body, fg_color="transparent")
         fields_row.pack(fill="x", pady=(0, 4))
 
-        field_state = "normal" if not self.diet_fields_locked else "disabled"
+        # "readonly" (not "disabled") so values stay selectable/copyable while locked.
+        field_state = "normal" if not self.diet_fields_locked else "readonly"
 
         def labeled_entry(parent, label, value):
             col = ctk.CTkFrame(parent, fg_color="transparent")
@@ -611,10 +647,9 @@ class DietPage(ctk.CTkFrame):
             ctk.CTkLabel(
                 col, text=label, text_color=MUTED_TEXT, font=ctk.CTkFont(family="Segoe UI", size=11)
             ).pack(anchor="w")
-            entry = ctk.CTkEntry(col, width=100, state=field_state)
+            entry = ctk.CTkEntry(col, width=100)
             entry.insert(0, f"{value:g}")
-            if self.diet_fields_locked:
-                entry.configure(state="disabled")
+            entry.configure(state=field_state)
             entry.pack(anchor="w")
             return entry
 
@@ -837,4 +872,7 @@ class DietPage(ctk.CTkFrame):
             )
 
         ctk.CTkLabel(modal, text=body_text, wraplength=380, justify="left").pack(padx=24, pady=10)
-        ctk.CTkButton(modal, text="Got it", command=modal.destroy).pack(pady=20)
+        ctk.CTkButton(
+            modal, text="Got it", command=modal.destroy,
+            fg_color=self.accent_color, hover_color=self.accent_hover,
+        ).pack(pady=20)
