@@ -224,7 +224,7 @@ class AppShell(ctk.CTk):
     def _build_nav_node(self, parent, node, depth, area_color=None):
         indent = 16 + depth * 16
         # Extra gap between top-level life areas so the tree reads cleaner.
-        area_pady = (6, 6) if depth == 0 else 1
+        area_pady = (10, 10) if depth == 0 else 1
 
         if depth == 0:
             area_color = AREA_COLORS.get(node["label"])
