@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Iron Food Tracker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#111418">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #ffffff; --text: #1a1d23; --muted: #6b7280; --line: #e3e6eb;
+    --accent: #2f9e6e; --accent-text: #ffffff; --warn: #b7791f; --bad: #c0392b; --input: #f0f2f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418; --card: #1b1f26; --text: #e7e9ee; --muted: #9aa0ab; --line: #2b313b;
+      --accent: #3fb97f; --accent-text: #0b1f15; --warn: #d9a441; --bad: #ef6b5e; --input: #262b34;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+  .wrap { padding: 16px; max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0; }
+  h2 { font-size: 13px; margin: 20px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand img { border-radius: 9px; flex: none; }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .big { font-size: 22px; font-weight: 700; }
+  .good { color: var(--accent); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  button, select, input { font: inherit; color: var(--text); }
+  button { border: 0; border-radius: 10px; padding: 10px 14px; background: var(--input); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-text); font-weight: 600; }
+  button.small { padding: 8px 12px; font-size: 14px; white-space: nowrap; flex: none; }
+  .brand h1 { font-size: 18px; }
+  button.ghost { background: transparent; color: var(--muted); padding: 6px 10px; }
+  input[type=text], input[type=email], input[type=password], input[type=date], select {
+    width: 100%; background: var(--input); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; }
+  label { display: block; margin: 12px 0 4px; font-size: 14px; color: var(--muted); }
+  .item { width: 100%; text-align: left; display: flex; justify-content: space-between; gap: 12px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
+  .item .name { font-weight: 600; }
+  [hidden] { display: none !important; }
+  .group { margin-bottom: 8px; }
+  .group-head { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: left;
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; font-weight: 700; }
+  .group-head .chev { display: inline-block; width: 1.2em; color: var(--muted); }
+  .group-body { padding: 8px 0 0 12px; }
+  .group-body .item { margin-bottom: 6px; }
+  .tabs { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card);
+    border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+  .tabs button { flex: 1; border-radius: 0; background: transparent; padding: 14px 4px; color: var(--muted); font-size: 14px; }
+  .tabs button.on { color: var(--accent); font-weight: 700; }
+  .sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: flex-end; z-index: 10; }
+  .sheet { background: var(--bg); width: 100%; max-height: 88vh; overflow: auto; border-radius: 16px 16px 0 0;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); max-width: 640px; margin: 0 auto; }
+  .actions { display: flex; gap: 8px; margin-top: 16px; }
+  .actions button { flex: 1; }
+  .check { display: flex; align-items: center; gap: 10px; margin-top: 12px; color: var(--text); }
+  .check input { width: 20px; height: 20px; }
+  .toast { position: fixed; left: 16px; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom)); background: var(--text);
+    color: var(--bg); padding: 12px 14px; border-radius: 10px; z-index: 20; text-align: center; }
+  .error { color: var(--bad); margin-top: 8px; font-size: 14px; }
+  .bar { height: 8px; border-radius: 4px; background: var(--input); overflow: hidden; margin-top: 8px; }
+  .bar > div { height: 100%; background: var(--accent); }
+  .bar.over > div { background: var(--bad); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+(() => {
+  "use strict";
+
+  const TYPES = [
+    ["income", "Ingreso"], ["expense", "Gasto"], ["savings", "Ahorro enviado"],
+    ["savings_withdrawal", "Retiro de ahorro"], ["internal_transfer", "Transferencia interna"],
+    ["card_payment", "Pago de tarjeta"], ["sponsorship", "Patrocinio"], ["interest", "Intereses"],
+    ["debt_repayment", "Deuda cobrada"],
+  ];
+  const BUCKETS = { needs: "Necesidades", wants: "Gustos", savings: "Ahorro" };
+
+  const APP_NAME = "Iron Food Tracker";
+  const state = { sb: null, user: null, tab: "food", month: thisMonth(), items: [], purchases: [], open: loadOpenGroups() };
+
+  function loadOpenGroups() {
+    try { return new Set(JSON.parse(localStorage.getItem("openGroups") || "[]")); } catch { return new Set(); }
+  }
+  function saveOpenGroups() {
+    try { localStorage.setItem("openGroups", JSON.stringify([...state.open])); } catch { /* sin almacenamiento */ }
+  }
+
+  // ---------- helpers ----------
+  function h(tag, props, ...kids) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(props || {})) {
+      if (v === false || v == null) continue;
+      if (k === "class") el.className = v;
+      else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+      else if (k === "value") el.value = v;
+      else if (k === "checked") el.checked = !!v;
+      else el.setAttribute(k, v);
+    }
+    for (const kid of kids.flat(Infinity)) {
+      if (kid == null || kid === false) continue;
+      el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+    }
+    return el;
+  }
+  // randomUUID solo existe en contextos seguros (https); alternativa para cualquier otro caso.
+  function uid() {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    const b = crypto.getRandomValues(new Uint8Array(16));
+    return [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
+  }
+  const fmt = (n) => {
+    const v = Math.round(Number(n) || 0);
+    return (v < 0 ? "-$" : "$") + Math.abs(v).toLocaleString("es-CO");
+  };
+  function localDate(d = new Date()) {
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  }
+  function thisMonth() { return localDate().slice(0, 7); }
+  function shiftMonth(ym, delta) {
+    const [y, m] = ym.split("-").map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }
+  const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  const monthLabel = (ym) => { const [y, m] = ym.split("-"); return `${MONTHS[Number(m) - 1]} ${y}`; };
+
+  // "5200+2600+13500", "11.500", "2,600" -> total (sin eval)
+  function parseTerm(raw) {
+    const s = raw.replace(/[\s$]/g, "");
+    if (!s) return null;
+    if (/^\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(s)) return parseFloat(s.replace(/\./g, "").replace(",", "."));
+    if (/^\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(s)) return parseFloat(s.replace(/,/g, ""));
+    if (/^\d+([.,]\d{1,2})?$/.test(s)) return parseFloat(s.replace(",", "."));
+    return null;
+  }
+  function parseExpression(expr) {
+    const terms = expr.split("+");
+    let total = 0;
+    for (const t of terms) {
+      const v = parseTerm(t);
+      if (v == null || v <= 0) return null;
+      total += v;
+    }
+    return total;
+  }
+
+  function toast(msg) {
+    const el = h("div", { class: "toast" }, msg);
+    document.body.append(el);
+    setTimeout(() => el.remove(), 2500);
+  }
+
+  async function q(promise) {
+    const { data, error } = await promise;
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  function brand(section) {
+    return h("div", { class: "brand" },
+      h("img", { src: "logo.png", alt: "", width: "40", height: "40" }),
+      h("div", null, h("h1", null, APP_NAME),
+        section ? h("div", { class: "muted" }, section, h("span", { id: "live", class: "good" }, state.live ? " · ● en vivo" : "")) : null));
+  }
+
+  // ---------- shell ----------
+  const app = document.getElementById("app");
+
+  function render() {
+    app.replaceChildren();
+    if (!state.user) return renderLogin();
+    const section = { food: "Comida", summary: "Resumen", review: "Revisión" }[state.tab];
+    const body = h("div", { class: "wrap" },
+      h("div", { class: "top" },
+        brand(section),
+        h("div", { class: "row", style: "gap:6px;justify-content:flex-end" },
+          h("button", { class: "primary small", onclick: openManualSheet }, "+ Movimiento"),
+          h("button", { class: "ghost", onclick: logout }, "Salir"))));
+    const content = h("div", { id: "content" }, h("p", { class: "muted" }, "Cargando…"));
+    body.append(content);
+    app.append(body, tabsBar());
+    ({ food: renderFood, summary: renderSummary, review: renderReview }[state.tab])(content).catch((e) => {
+      content.replaceChildren(h("p", { class: "error" }, "Error: " + e.message));
+    });
+  }
+
+  function tabsBar() {
+    const tab = (id, label) => h("button", { class: state.tab === id ? "on" : "", onclick: () => { state.tab = id; render(); } }, label);
+    return h("nav", { class: "tabs" }, tab("food", "Comida"), tab("summary", "Resumen"), tab("review", "Revisión"));
+  }
+
+  function renderLogin() {
+    const email = h("input", { type: "email", autocomplete: "username", placeholder: "correo" });
+    const pass = h("input", { type: "password", autocomplete: "current-password", placeholder: "contraseña" });
+    const err = h("div", { class: "error" });
+    const go = async () => {
+      err.textContent = "";
+      const { error } = await state.sb.auth.signInWithPassword({ email: email.value.trim(), password: pass.value });
+      if (error) err.textContent = "No se pudo entrar: " + error.message;
+    };
+    pass.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+    app.append(h("div", { class: "wrap" },
+      brand(null), h("p", { class: "muted" }, "Entra con tu usuario de Supabase."),
+      h("label", null, "Correo"), email, h("label", null, "Contraseña"), pass, err,
+      h("div", { class: "actions" }, h("button", { class: "primary", onclick: go }, "Entrar"))));
+  }
+
+  async function logout() { await state.sb.auth.signOut(); }
+
+  // ---------- Comida ----------
+  const monthStart = (ym) => ym + "-01";
+
+  async function renderFood(content) {
+    const [items, purchases] = await Promise.all([
+      q(state.sb.from("food_items").select("id,name,group_name,sort_order").eq("active", true).order("group_name").order("sort_order")),
+      q(state.sb.from("food_purchases").select("id,item_id,purchased_at,amount,expression,note,paid_cash,transaction_id")
+        .gte("purchased_at", monthStart(state.month)).lt("purchased_at", monthStart(shiftMonth(state.month, 1)))
+        .order("purchased_at")),
+    ]);
+    state.items = items; state.purchases = purchases;
+
+    const byItem = new Map();
+    for (const p of purchases) byItem.set(p.item_id, (byItem.get(p.item_id) || 0) + Number(p.amount));
+    const monthTotal = purchases.reduce((s, p) => s + Number(p.amount), 0);
+
+    const groups = new Map();
+    for (const it of items) { if (!groups.has(it.group_name)) groups.set(it.group_name, []); groups.get(it.group_name).push(it); }
+
+    content.replaceChildren(...[
+      h("div", { class: "row", style: "margin-bottom:8px" },
+        h("button", { onclick: () => { state.month = shiftMonth(state.month, -1); render(); } }, "◀"),
+        h("strong", null, monthLabel(state.month)),
+        h("button", { onclick: () => { state.month = shiftMonth(state.month, 1); render(); } }, "▶")),
+      h("div", { class: "card" }, h("div", { class: "muted" }, "Total del mes en comida"), h("div", { class: "big" }, fmt(monthTotal))),
+      h("div", { style: "margin-top:12px" }),
+      [...groups].map(([name, list]) => {
+        const groupTotal = list.reduce((s, it) => s + (byItem.get(it.id) || 0), 0);
+        const bought = list.filter((it) => byItem.has(it.id)).length;
+        const open = state.open.has(name);
+        const body = h("div", { class: "group-body" }, list.map((it) => h("button", { class: "item", onclick: () => openSheet(it) },
+          h("span", { class: "name" }, it.name),
+          h("span", { class: byItem.has(it.id) ? "good" : "muted" }, byItem.has(it.id) ? fmt(byItem.get(it.id)) : "—"))));
+        body.hidden = !open;
+        const chevron = h("span", { class: "chev" }, open ? "▾" : "▸");
+        const head = h("button", {
+          class: "group-head", "aria-expanded": String(open),
+          onclick: () => {
+            const nowOpen = body.hidden;
+            body.hidden = !nowOpen;
+            chevron.textContent = nowOpen ? "▾" : "▸";
+            head.setAttribute("aria-expanded", String(nowOpen));
+            if (nowOpen) state.open.add(name); else state.open.delete(name);
+            saveOpenGroups();
+          },
+        },
+          h("span", { class: "name" }, chevron, name, h("span", { class: "muted" }, `  ${bought}/${list.length}`)),
+          h("span", { class: groupTotal > 0 ? "good" : "muted" }, fmt(groupTotal)));
+        return h("div", { class: "group" }, head, body);
+      }),
+      h("div", { class: "actions" }, h("button", { onclick: addItem }, "+ Nuevo alimento")),
+    ].flat(Infinity));
+  }
+
+  async function addItem() {
+    const name = (prompt("Nombre del alimento") || "").trim();
+    if (!name) return;
+    const groups = [...new Set(state.items.map((i) => i.group_name))];
+    const group = (prompt("Grupo (existentes: " + groups.join(", ") + ")", groups[0] || "") || "").trim();
+    if (!group) return;
+    try {
+      await q(state.sb.from("food_items").insert({ name, group_name: group, sort_order: 99 }));
+      render();
+    } catch (e) { toast("Error: " + e.message); }
+  }
+
+  function openSheet(item) {
+    const mine = state.purchases.filter((p) => p.item_id === item.id);
+    const expr = h("input", { type: "text", placeholder: "ej. 5200+2600+13500", autocomplete: "off", inputmode: "text" });
+    const preview = h("div", { class: "muted" }, "Total: —");
+    const date = h("input", { type: "date", value: state.month === thisMonth() ? localDate() : monthStart(state.month) });
+    const cash = h("input", { type: "checkbox" });
+    const err = h("div", { class: "error" });
+    expr.addEventListener("input", () => {
+      const t = expr.value.trim() ? parseExpression(expr.value) : null;
+      preview.textContent = t == null ? (expr.value.trim() ? "Revisa los números (usa + para sumar)" : "Total: —") : "Total: " + fmt(t);
+    });
+
+    const close = () => {
+      bg.remove();
+      if (state.dirty) { state.dirty = false; render(); }
+    };
+    const save = async () => {
+      err.textContent = "";
+      const total = parseExpression(expr.value);
+      if (total == null) { err.textContent = "Escribe un precio válido, ej. 5200+2600"; return; }
+      try {
+        let transactionId = null;
+        if (cash.checked) {
+          const accounts = await q(state.sb.from("accounts").select("id").eq("name", "Efectivo"));
+          if (!accounts.length) throw new Error("No existe la cuenta Efectivo");
+          const tx = await q(state.sb.from("transactions").insert({
+            account_id: accounts[0].id,
+            occurred_at: new Date(date.value + "T12:00:00-05:00").toISOString(),
+            direction: "out", amount: total, source: "manual",
+            dedupe_hash: "food:" + uid(),
+            counterparty: item.name, description: "Comida: " + item.name,
+          }).select("id").single());
+          transactionId = tx.id;
+        }
+        await q(state.sb.from("food_purchases").insert({
+          item_id: item.id, purchased_at: date.value, amount: total, expression: expr.value.trim(),
+          paid_cash: cash.checked, transaction_id: transactionId,
+        }));
+        close(); toast("Guardado: " + fmt(total)); render();
+      } catch (e) { err.textContent = "Error: " + e.message; }
+    };
+    const remove = async (p) => {
+      if (!confirm(`¿Borrar ${fmt(p.amount)}?`)) return;
+      try {
+        if (p.transaction_id) await q(state.sb.from("transactions").delete().eq("id", p.transaction_id));
+        await q(state.sb.from("food_purchases").delete().eq("id", p.id));
+        close(); render();
+      } catch (e) { toast("Error: " + e.message); }
+    };
+
+    const bg = h("div", { class: "sheet-bg", onclick: (e) => { if (e.target === bg) close(); } },
+      h("div", { class: "sheet" },
+        h("h1", null, item.name), h("div", { class: "muted" }, monthLabel(state.month)),
+        mine.length ? h("h2", null, "Registrado este mes") : null,
+        mine.map((p) => h("div", { class: "card row" },
+          h("span", null, `${p.purchased_at.slice(8)}/${p.purchased_at.slice(5, 7)} · ${fmt(p.amount)}`,
+            p.paid_cash ? h("span", { class: "muted" }, " · efectivo") : null),
+          h("button", { class: "ghost", onclick: () => remove(p), "aria-label": "Borrar" }, "✕"))),
+        h("h2", null, "Agregar compra"),
+        h("label", null, "Precio (puedes sumar con +)"), expr, preview,
+        h("label", null, "Fecha"), date,
+        h("label", { class: "check" }, cash, "Pagué en efectivo (suma al presupuesto de Mercado)"),
+        h("div", { class: "muted", style: "margin-top:4px" }, "Si pagaste con tarjeta o transferencia, déjalo apagado: esa compra ya llega por alerta."),
+        err,
+        h("div", { class: "actions" }, h("button", { onclick: close }, "Cerrar"), h("button", { class: "primary", onclick: save }, "Guardar"))));
+    document.body.append(bg);
+    expr.focus();
+  }
+
+  // ---------- + Movimiento (registro manual) ----------
+  async function openManualSheet() {
+    let accounts, categories;
+    try {
+      [accounts, categories] = await Promise.all([
+        q(state.sb.from("accounts").select("id,name").order("name")),
+        q(state.sb.from("categories").select("id,name").order("name")),
+      ]);
+    } catch (e) { toast("Error: " + e.message); return; }
+
+    const account = h("select", null, accounts.map((a) => h("option", { value: a.id }, a.name)));
+    const direction = h("select", null, h("option", { value: "out" }, "Sale"), h("option", { value: "in" }, "Entra"));
+    const amount = h("input", { type: "text", placeholder: "ej. 12000 o 5200+2600", autocomplete: "off", inputmode: "text" });
+    const preview = h("div", { class: "muted" }, "Total: —");
+    const date = h("input", { type: "date", value: localDate() });
+    const counterparty = h("input", { type: "text", placeholder: "opcional", autocomplete: "off" });
+    const note = h("input", { type: "text", placeholder: "opcional", autocomplete: "off" });
+    const type = h("select", null, h("option", { value: "" }, "Automático (reglas)"), TYPES.map(([v, l]) => h("option", { value: v }, l)));
+    const cat = h("select", null, h("option", { value: "" }, "(sin categoría)"), categories.map((c) => h("option", { value: c.id }, c.name)));
+    const err = h("div", { class: "error" });
+    amount.addEventListener("input", () => {
+      const t = amount.value.trim() ? parseExpression(amount.value) : null;
+      preview.textContent = t == null ? (amount.value.trim() ? "Revisa los números (usa + para sumar)" : "Total: —") : "Total: " + fmt(t);
+    });
+
+    const close = () => {
+      bg.remove();
+      if (state.dirty) { state.dirty = false; render(); }
+    };
+    const save = async () => {
+      err.textContent = "";
+      const total = parseExpression(amount.value);
+      if (total == null) { err.textContent = "Escribe un valor válido, ej. 12000"; return; }
+      const day = date.value || localDate();
+      // Hoy -> hora actual (para poder emparejarse con la otra mitad de una transferencia); otro dia -> mediodia.
+      const occurred = day === localDate() ? new Date().toISOString() : new Date(day + "T12:00:00-05:00").toISOString();
+      const cp = counterparty.value.trim() || null;
+      try {
+        const row = await q(state.sb.from("transactions").insert({
+          account_id: account.value, occurred_at: occurred, direction: direction.value, amount: total,
+          source: "manual", dedupe_hash: "manual:" + uid(),
+          counterparty: cp, description: note.value.trim() || cp || "Movimiento manual",
+        }).select("id").single());
+        if (type.value) {
+          await q(state.sb.from("transactions").update({ type: type.value, category_id: cat.value || null, needs_review: false }).eq("id", row.id));
+        }
+        close(); toast("Guardado: " + fmt(total)); render();
+      } catch (e) { err.textContent = "Error: " + e.message; }
+    };
+
+    const bg = h("div", { class: "sheet-bg", onclick: (e) => { if (e.target === bg) close(); } },
+      h("div", { class: "sheet" },
+        h("h1", null, "Nuevo movimiento"),
+        h("label", null, "Cuenta"), account,
+        h("label", null, "Sentido"), direction,
+        h("label", null, "Valor (puedes sumar con +)"), amount, preview,
+        h("label", null, "Fecha"), date,
+        h("label", null, "A quién / de quién"), counterparty,
+        h("label", null, "Nota"), note,
+        h("label", null, "Tipo"), type,
+        h("label", null, "Categoría (solo si eliges un tipo)"), cat,
+        err,
+        h("div", { class: "actions" }, h("button", { onclick: close }, "Cerrar"), h("button", { class: "primary", onclick: save }, "Guardar"))));
+    document.body.append(bg);
+    amount.focus();
+  }
+
+  // ---------- Resumen ----------
+  async function renderSummary(content) {
+    const first = monthStart(thisMonth());
+    const [rows, progress] = await Promise.all([
+      q(state.sb.from("monthly_budget").select("*").lte("month", first).order("month", { ascending: false }).limit(1)),
+      q(state.sb.from("savings_progress").select("*").lte("month", first).order("month", { ascending: false }).limit(1)),
+    ]);
+    if (!rows.length) { content.replaceChildren(h("p", { class: "muted" }, "Todavía no hay movimientos este mes.")); return; }
+    const r = rows[0];
+    const bucket = (key, goal, spent, avail) => {
+      const pct = Number(goal) > 0 ? Math.min(100, (Number(spent) / Number(goal)) * 100) : (Number(spent) > 0 ? 100 : 0);
+      const isSavings = key === "savings";
+      const over = Number(avail) < 0;
+      const label = isSavings
+        ? (over ? "Adelantado " + fmt(-avail) : "Falta " + fmt(avail))
+        : (over ? "Te pasaste " + fmt(-avail) : "Disponible " + fmt(avail));
+      return h("div", { class: "card" },
+        h("div", { class: "row" }, h("strong", null, BUCKETS[key]), h("span", { class: isSavings ? (over ? "good" : "warn") : (over ? "bad" : "good") }, label)),
+        h("div", { class: "muted" }, `Meta ${fmt(goal)} · ${key === "savings" ? "enviado" : "gastado"} ${fmt(spent)}`),
+        h("div", { class: "bar" + (over && !isSavings ? " over" : "") }, h("div", { style: `width:${pct}%` })));
+    };
+    const extras = [];
+    if (Number(r.sponsorship_income) > 0) extras.push("Patrocinio " + fmt(r.sponsorship_income));
+    if (Number(r.interest_income) > 0) extras.push("Intereses " + fmt(r.interest_income));
+    if (Number(r.debt_repayment_income) > 0) extras.push("Deudas cobradas " + fmt(r.debt_repayment_income));
+
+    const kids = [
+      h("div", { class: "card" }, h("div", { class: "muted" }, `${monthLabel(r.month.slice(0, 7))} · ingreso base`), h("div", { class: "big" }, fmt(r.income)),
+        extras.length ? h("div", { class: "muted" }, "Fuera del 50/30/20 (van a ahorros): " + extras.join(" · ")) : null),
+      bucket("needs", r.needs_goal, r.needs_spent, r.needs_available),
+      bucket("wants", r.wants_goal, r.wants_spent, r.wants_available),
+      bucket("savings", r.savings_goal, r.savings_actual, r.savings_available),
+    ];
+    if (progress.length) {
+      const p = progress[0]; const rem = Number(p.remaining);
+      kids.push(h("h2", null, "Ahorro acumulado"),
+        h("div", { class: "card" },
+          h("div", { class: "muted" }, `Debes enviar ${fmt(p.cumulative_target)} · enviado ${fmt(p.cumulative_sent)}`),
+          h("div", { class: "big " + (rem > 0 ? "warn" : "good") }, rem > 0 ? "Falta " + fmt(rem) : "Adelantado " + fmt(-rem))));
+    }
+    if (Number(r.unclassified_expense) > 0) kids.push(h("p", { class: "warn" }, `⚠ ${fmt(r.unclassified_expense)} sin clasificar (Revisión).`));
+    content.replaceChildren(...kids);
+  }
+
+  // ---------- Revisión ----------
+  async function renderReview(content) {
+    const [rows, accounts, categories] = await Promise.all([
+      q(state.sb.from("transactions").select("id,account_id,occurred_at,direction,amount,description,type,category_id,paired_with")
+        .eq("needs_review", true).order("occurred_at", { ascending: false }).limit(50)),
+      q(state.sb.from("accounts").select("id,name")),
+      q(state.sb.from("categories").select("id,name").order("name")),
+    ]);
+    if (!rows.length) { content.replaceChildren(h("p", { class: "muted" }, "No hay movimientos por revisar. 🎉")); return; }
+    const acct = new Map(accounts.map((a) => [a.id, a.name]));
+
+    content.replaceChildren(...rows.map((r) => {
+      const type = h("select", null, TYPES.map(([v, l]) => h("option", { value: v, selected: v === r.type ? "selected" : false }, l)));
+      const cat = h("select", null,
+        h("option", { value: "" }, "(sin categoría)"),
+        categories.map((c) => h("option", { value: c.id, selected: c.id === r.category_id ? "selected" : false }, c.name)));
+      const save = async () => {
+        try {
+          await q(state.sb.from("transactions").update({ type: type.value, category_id: cat.value || null, needs_review: false }).eq("id", r.id));
+          toast("Guardado"); render();
+        } catch (e) { toast("Error: " + e.message); }
+      };
+      return h("div", { class: "card" },
+        h("div", { class: "row" }, h("strong", null, `${r.direction === "in" ? "+" : "−"}${fmt(r.amount)}`),
+          h("span", { class: "muted" }, `${r.occurred_at.slice(0, 10)} · ${acct.get(r.account_id) || "?"}`)),
+        h("div", { class: "muted", style: "margin:6px 0" }, (r.description || "(sin descripción)").slice(0, 160)),
+        r.paired_with ? h("div", { class: "good", style: "font-size:14px" }, "↔ Emparejado con otro movimiento: parece una transferencia entre tus cuentas") : null,
+        h("label", null, "Tipo"), type, h("label", null, "Categoría"), cat,
+        h("div", { class: "actions" }, h("button", { class: "primary", onclick: save }, "Guardar")));
+    }));
+  }
+
+  // ---------- arranque ----------
+  // Cambios en vivo: lo que se cambie en el escritorio (o en otro celular) aparece aqui solo.
+  let refreshTimer = null;
+  function ensureRealtime() {
+    if (state.user && !state.channel) {
+      const ch = state.sb.channel("iron-mobile");
+      for (const table of ["transactions", "food_purchases", "food_items"]) {
+        ch.on("postgres_changes", { event: "*", schema: "public", table }, scheduleRefresh);
+      }
+      ch.subscribe((status) => {
+        state.live = status === "SUBSCRIBED";
+        const el = document.getElementById("live");
+        if (el) el.textContent = state.live ? " · ● en vivo" : "";
+      });
+      state.channel = ch;
+    } else if (!state.user && state.channel) {
+      state.sb.removeChannel(state.channel);
+      state.channel = null; state.live = false;
+    }
+  }
+  function scheduleRefresh() {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(tryRefresh, 500);
+  }
+  function tryRefresh() {
+    if (document.querySelector(".sheet-bg")) { state.dirty = true; return; }   // formulario abierto
+    const a = document.activeElement;
+    if (a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) { refreshTimer = setTimeout(tryRefresh, 2000); return; }
+    render();
+  }
+
+  async function start(sb) {
+    state.sb = sb;
+    sb.auth.onAuthStateChange((_event, session) => { state.user = session ? session.user : null; ensureRealtime(); render(); });
+    const { data } = await sb.auth.getSession();
+    state.user = data.session ? data.session.user : null;
+    ensureRealtime();
+    render();
+  }
+
+  window.__finanzas = { start, parseExpression, parseTerm };
+  if (!window.__FINANZAS_NO_AUTOSTART) {
+    start(supabase.createClient(window.FINANCE_CONFIG.SUPABASE_URL, window.FINANCE_CONFIG.SUPABASE_KEY));
+  }
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
