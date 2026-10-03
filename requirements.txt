@@ -4,4 +4,8 @@ requests
 freezegun
 customtkinter
 matplotlib
+supabase
+python-dotenv
+pandas
+openpyxl
 

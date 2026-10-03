@@ -6,6 +6,7 @@ import customtkinter as ctk
 from PIL import Image
 
 from features.physical import calendar_gui, storage
+from features.productive.finance.finance_page import FinancePage
 
 SIDEBAR_BG = ("#eef0f3", "#181b21")
 NODE_HOVER = ("#dde1e8", "#242933")
@@ -77,7 +78,12 @@ NAV_TREE = [
             },
         ],
     },
-    {"label": "Productive", "children": []},
+    {
+        "label": "Productive",
+        "children": [
+            {"label": "Finanzas", "page": "finance"},
+        ],
+    },
     {"label": "Social", "children": []},
     {"label": "Intellectual", "children": []},
     {"label": "Spiritual", "children": []},
@@ -85,6 +91,7 @@ NAV_TREE = [
 
 PAGES = {
     "diet": lambda master, data, accent: calendar_gui.DietPage(master, data, accent_color=accent),
+    "finance": lambda master, data, accent: FinancePage(master, data, accent_color=accent),
 }
 
 
