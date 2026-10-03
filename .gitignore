@@ -218,6 +218,7 @@ __marimo__/
 .streamlit/secrets.toml
 credentials.json
 token.json
+token_gmail.json
 data/
 
 # Windows shell artifact (e.g. `... 2>nul` resolved as a real file under Git Bash)
