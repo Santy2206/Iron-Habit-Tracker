@@ -3,3 +3,6 @@ project_id = "lqxfzeetqwmhcvkjuquj"
 # Google calls this endpoint directly (no user JWT)
 [functions.gcal-webhook]
 verify_jwt = false
+
+[functions.ingest-notification]
+verify_jwt = false
