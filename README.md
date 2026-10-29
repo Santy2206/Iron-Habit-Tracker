@@ -1,24 +1,36 @@
-# IRON - The Ultimate Habit Optimization Ecosystem
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-#### Video Demo: <URL HERE>
+## Getting Started
 
-#### Description:
-**IRON** is a command-line/software tool engineered to optimize daily habits and routines through data-driven tracking. Unlike traditional habit tracking apps that simply monitor simple "yes/no" completions, IRON treats habit building as a system-optimization problem. It allows users to track behavioral patterns alongside performance variables to help discover true bottlenecks in daily execution.
+First, run the development server:
 
-The core philosophy of IRON is rooted in actionable feedback loops. The architecture allows you to quantify habits, measure execution friction, and analyze historical progress to make calculated adjustments over time.
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-### Key Features
-*   **Dynamic Habit Engine:** Define habits with custom metrics (e.g., duration, difficulty, quantity) rather than binary checkmarks.
-*   **Friction & Optimization Tracking:** Log qualitative and quantitative obstacles preventing consistent habit execution.
-*   **Data Aggregation:** Generate comprehensive local summaries showing long-term consistency rates and optimization metrics.
-*   **Persistent Storage:** Uses a structured layout to log data locally, ensuring full privacy and portability for your behavioral analytics.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### File Architecture & Component Breakdown
-*   `project.py`: The core application script containing the primary control flow, the menu interface, and main functional logic.
-*   `habits.py`: Manages the habit objects, custom metrics, and data validation rules for logging.
-*   `storage.py`: Handles file input/output operations, reading from and writing user data securely to local files.
-*   `analytics.py`: Processes historical log data to calculate performance optimizations, streaks, and trends.
-*   `test_project.py`: A comprehensive suite of automated tests using `pytest` to verify key data-handling functions.
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-### Design Choices & Rationale
-During development, a key decision was made to track "execution difficulty/friction" alongside the completion rate itself. Standard trackers fail when a user misses a habit, offering no context. By logging *why* or *how hard* a habit was to execute on a given day, IRON provides clear qualitative data that helps the user actively re-engineer their environment for better long-term optimization.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

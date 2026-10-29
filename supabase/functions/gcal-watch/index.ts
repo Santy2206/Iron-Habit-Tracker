@@ -1,0 +1,19 @@
+// Registers a Google Calendar push-notification channel pointing at
+// gcal-webhook. Call once per user (channels expire ~7 days, renew
+// periodically or on demand).
+// POST (JWT) -> { ok }
+
+import { corsHeaders, json } from "../_shared/cors.ts";
+import { getUser } from "../_shared/auth.ts";
+import { registerWatch } from "../_shared/google.ts";
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ ok: false }, 405);
+
+  const user = await getUser(req);
+  if (!user) return json({ ok: false, reason: "unauthorized" }, 401);
+
+  const result = await registerWatch(user.id);
+  return json(result);
+});
